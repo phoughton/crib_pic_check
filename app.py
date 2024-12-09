@@ -1,5 +1,6 @@
 import base64
 import io
+import json
 import streamlit as st
 from PIL import Image
 from openai import OpenAI
@@ -49,15 +50,10 @@ def detect_cards(image_b64):
         presence_penalty=0
     )
     assistant_message = response.choices[0].message.content
-    return assistant_message
+    return json.loads(assistant_message)
 
 
-# Attempt to capture an image directly from the user's camera.
-img_file_buffer = st.camera_input("Take a photo")
-
-if img_file_buffer is not None:
-    # The user took a photo
-    img = Image.open(img_file_buffer)
+def handle_a_pic(img):
     st.write("This is a beautiful image!")
 
     width, height = img.size
@@ -71,22 +67,37 @@ if img_file_buffer is not None:
     st.image(resized_img, caption="Here's the image you took.")
     st.write(f"New image size: {width}x{height}")
 
+    # Encode the bytes to base64
     buffer = io.BytesIO()
     resized_img.save(buffer, format="JPEG")
     buffer.seek(0)
-
-    # Get the raw binary data
     img_bytes = buffer.read()
-
-    # Encode the bytes to base64
     encoded = base64.b64encode(img_bytes).decode("utf-8")
 
     cards = detect_cards(encoded)
+
+    if "cards" in cards:
+        starter_choices = cards["cards"]
+        choice = st.radio("Please choose your starter card:\n",
+                          starter_choices)
+
+        st.write("You selected:", choice)
+    else:
+        st.write("Sorry could not see any cards")
+        st.write(f"The raw response was: {cards}")
+    
+
+# Attempt to capture an image directly from the user's camera.
+img_file_buffer = st.camera_input("Take a photo")
+
+if img_file_buffer is not None:
+    # The user took a photo
+    an_img = Image.open(img_file_buffer)
+    handle_a_pic(an_img)
 
 else:
     # If no camera image was taken, allow file upload instead
     uploaded_file = st.file_uploader("Or upload an image", type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
-        img = Image.open(uploaded_file)
-        st.image(img, caption="Here's the image you uploaded.")
-        st.write("This is a lovely image!")
+        an_img = Image.open(uploaded_file)
+        handle_a_pic(an_img)
