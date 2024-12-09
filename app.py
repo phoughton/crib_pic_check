@@ -16,28 +16,32 @@ def detect_cards(image_b64):
         model="gpt-4o",
         messages=[
             {
-            "role": "system",
-            "content": [
-                {
-                "type": "text",
-                "text": "You analyse playing cards and return a list of cards present in any image.\nReturn a response in JSON, using this style:\n[\n\"AC\", \"5H\",  \"KD\", \"10H\", \"4S\"\n]"
-                }
-            ]
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "You analyse playing cards and return a "
+                        "list of cards present in any image.\nReturn "
+                        "a response in JSON, using this"
+                        "style:\n[\n\"AC\", \"5H\",  "
+                        "\"KD\", \"10H\", \"4S\"\n]"
+                    }
+                ]
             },
             {
-            "role": "user",
-            "content": [
-                {
-                "type": "text",
-                "text": "What cards are in this image?"
-                },
-                {
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{image_b64}"
-                }
-                }
-            ]
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "What cards are in this image?"
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_b64}"
+                        }
+                    }
+                ]
             }
         ],
         response_format={
