@@ -1,9 +1,20 @@
 import base64
 import io
 import json
+from pydantic import BaseModel, RootModel
 import streamlit as st
 from PIL import Image
 from openai import OpenAI
+
+
+class Card(BaseModel):
+    initials: str
+    description: str
+
+
+class HandOfCards(BaseModel):
+    cards: RootModel[list[Card]]
+
 
 st.title("Image Capture and Upload Example")
 new_width = 500
@@ -12,7 +23,7 @@ new_width = 500
 def detect_cards(image_b64):
     client = OpenAI()
 
-    response = client.chat.completions.create(
+    response = client.beta.chat.completions.parse(
         model="gpt-4o",
         messages=[
             {
@@ -44,9 +55,7 @@ def detect_cards(image_b64):
                 ]
             }
         ],
-        response_format={
-            "type": "json_object"
-        },
+        response_format=HandOfCards,
         temperature=1,
         max_tokens=10383,
         top_p=1,
@@ -54,7 +63,17 @@ def detect_cards(image_b64):
         presence_penalty=0
     )
     assistant_message = response.choices[0].message.content
+    print(f"OpenAI API called, and answered.\n{response}")
     return json.loads(assistant_message)
+
+
+def dicts_from_cards(cards_list):
+    by_desc = {}
+    by_initials = {}
+    for card in cards_list:
+        by_desc[card["description"]] = card["initials"]
+        by_initials[card["initials"]] = card["description"]
+    return by_desc, by_initials
 
 
 def handle_a_pic(img):
@@ -78,18 +97,26 @@ def handle_a_pic(img):
     img_bytes = buffer.read()
     encoded = base64.b64encode(img_bytes).decode("utf-8")
 
-    cards = detect_cards(encoded)
+    if "cards" not in st.session_state:
+        st.session_state["cards"] = detect_cards(encoded)
+
+    cards = st.session_state["cards"]
 
     if "cards" in cards:
         starter_choices = cards["cards"]
+        descs, initials = dicts_from_cards(starter_choices)
         choice = st.radio("Please choose your starter card:\n",
-                          starter_choices)
-
-        st.write("You selected:", choice)
+                          descs.keys())
+        st.write("You selected:", choice, "which is ", descs[choice])
     else:
         st.write("Sorry could not see any cards")
         st.write(f"The raw response was: {cards}")
-    
+
+    score_req_msg = {"starter": descs[choice],
+                     "hand": list(initials.keys()),
+                     "crib": False}
+    print(score_req_msg)
+
 
 # Attempt to capture an image directly from the user's camera.
 img_file_buffer = st.camera_input("Take a photo")
