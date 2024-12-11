@@ -5,8 +5,18 @@ from pydantic import BaseModel, RootModel
 import streamlit as st
 from PIL import Image
 from openai import OpenAI
+import requests
 
 
+scorer_url = "https://cribbage.azurewebsites.net/score_hand_show"
+headers = {
+    "Accept": "application/json"
+}
+
+new_width = 500  # Resize to this for OpenAI
+
+
+# Expected response structure from OpenAI
 class Card(BaseModel):
     initials: str
     description: str
@@ -16,8 +26,7 @@ class HandOfCards(BaseModel):
     cards: RootModel[list[Card]]
 
 
-st.title("Image Capture and Upload Example")
-new_width = 500
+st.title("Cribbage Scorer v2")
 
 
 def detect_cards(image_b64):
@@ -112,10 +121,22 @@ def handle_a_pic(img):
         st.write("Sorry could not see any cards")
         st.write(f"The raw response was: {cards}")
 
+    just_hand = initials.copy()
+    just_hand.pop(descs[choice], None) 
+    print(initials, just_hand)
     score_req_msg = {"starter": descs[choice],
-                     "hand": list(initials.keys()),
-                     "crib": False}
+                     "hand": list(just_hand.keys()),
+                     "isCrib": False}
     print(score_req_msg)
+
+    print(json.dumps(score_req_msg))
+    response = requests.post(scorer_url,
+                             json=score_req_msg, headers=headers)
+    print(response.content)
+    if "message" in response.json():
+        st.write(f"The score was {response.json()['score']}")
+        st.write(response.json()['message'])
+
 
 
 # Attempt to capture an image directly from the user's camera.
