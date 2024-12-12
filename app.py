@@ -93,13 +93,11 @@ def handle_a_pic(img):
     resize_ratio = (float(width)/new_width)
     new_height = int(height/resize_ratio)
 
-    # Resize the image
     resized_img = img.resize((new_width, new_height))
     width, height = resized_img.size
     st.image(resized_img, caption="Here's the image you took.")
     st.write(f"New image size: {width}x{height}")
 
-    # Encode the bytes to base64
     buffer = io.BytesIO()
     resized_img.save(buffer, format="JPEG")
     buffer.seek(0)
@@ -113,43 +111,38 @@ def handle_a_pic(img):
 
     if "cards" in cards:
         starter_choices = cards["cards"]
-        descs, initials = dicts_from_cards(starter_choices)
+        cards_by_descs, cards_by_initials = dicts_from_cards(starter_choices)
         choice = st.radio("Please choose your starter card:\n",
-                          descs.keys())
-        st.write("You selected:", choice, "which is ", descs[choice])
+                          cards_by_descs.keys())
+        st.write("You selected:", choice, "which is ", cards_by_descs[choice])
     else:
         st.write("Sorry could not see any cards")
         st.write(f"The raw response was: {cards}")
 
-    just_hand = initials.copy()
-    just_hand.pop(descs[choice], None) 
-    print(initials, just_hand)
-    score_req_msg = {"starter": descs[choice],
+    just_hand = cards_by_initials.copy()
+    just_hand.pop(cards_by_descs[choice], None) 
+    score_req_msg = {"starter": cards_by_descs[choice],
                      "hand": list(just_hand.keys()),
                      "isCrib": False}
-    print(score_req_msg)
 
-    print(json.dumps(score_req_msg))
     response = requests.post(scorer_url,
                              json=score_req_msg, headers=headers)
-    print(response.content)
+
     if "message" in response.json():
         st.write(f"The score was {response.json()['score']}")
         st.write(response.json()['message'])
 
 
-
 # Attempt to capture an image directly from the user's camera.
-img_file_buffer = st.camera_input("Take a photo")
+img_file_buffer = st.camera_input("Take a picture of your cards:")
 
 if img_file_buffer is not None:
-    # The user took a photo
     an_img = Image.open(img_file_buffer)
     handle_a_pic(an_img)
 
 else:
-    # If no camera image was taken, allow file upload instead
-    uploaded_file = st.file_uploader("Or upload an image", type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Or upload an image",
+                                     type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
         an_img = Image.open(uploaded_file)
         handle_a_pic(an_img)
