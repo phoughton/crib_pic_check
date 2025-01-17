@@ -13,7 +13,7 @@ headers = {
     "Accept": "application/json"
 }
 
-new_width = 500  # Resize to this for OpenAI
+new_width = 600  # Resize to this for OpenAI
 
 
 # Expected response structure from OpenAI
@@ -27,6 +27,20 @@ class HandOfCards(BaseModel):
 
 
 st.title("Cribbage Scorer v2")
+
+
+def reset_session_state():
+    for key in ["cards", "last_input"]:
+        if key in st.session_state:
+            del st.session_state[key]
+
+
+def manage_session_state(img_buffer):
+    if "last_input" in st.session_state and \
+            st.session_state["last_input"] != img_buffer:
+        reset_session_state()
+
+    st.session_state["last_input"] = img_buffer
 
 
 def detect_cards(image_b64):
@@ -72,7 +86,6 @@ def detect_cards(image_b64):
         presence_penalty=0
     )
     assistant_message = response.choices[0].message.content
-    print(f"OpenAI API called, and answered.\n{response}")
     return json.loads(assistant_message)
 
 
@@ -86,57 +99,62 @@ def dicts_from_cards(cards_list):
 
 
 def handle_a_pic(img):
-    st.write("This is a beautiful image!")
 
     width, height = img.size
-    st.write(f"Current image size: {width}x{height}")
     resize_ratio = (float(width)/new_width)
     new_height = int(height/resize_ratio)
 
     resized_img = img.resize((new_width, new_height))
     width, height = resized_img.size
     st.image(resized_img, caption="Here's the image you took.")
-    st.write(f"New image size: {width}x{height}")
 
     buffer = io.BytesIO()
     resized_img.save(buffer, format="JPEG")
     buffer.seek(0)
     img_bytes = buffer.read()
-    encoded = base64.b64encode(img_bytes).decode("utf-8")
+    b64encoded_img = base64.b64encode(img_bytes).decode("utf-8")
 
     if "cards" not in st.session_state:
-        st.session_state["cards"] = detect_cards(encoded)
+        st.session_state["cards"] = detect_cards(b64encoded_img)
 
     cards = st.session_state["cards"]
 
-    if "cards" in cards:
-        starter_choices = cards["cards"]
-        cards_by_descs, cards_by_initials = dicts_from_cards(starter_choices)
-        choice = st.radio("Please choose your starter card:\n",
-                          cards_by_descs.keys())
-        st.write("You selected:", choice, "which is ", cards_by_descs[choice])
+    if len(cards["cards"]) != 5:
+        st.write("I can't score the hand as the "
+                 "correct number of cards (ie.: 5) is not present.")
     else:
-        st.write("Sorry could not see any cards")
-        st.write(f"The raw response was: {cards}")
+        if "cards" in cards:
+            card_choices = cards["cards"]
+            cards_by_descs, cards_by_initials = dicts_from_cards(card_choices)
+            choice = st.radio("Please choose your starter card "
+                              "(We guessed it was the first one):\n",
+                              cards_by_descs.keys())
+            st.write("You selected:", choice)
+        else:
+            st.write("Sorry could not see any cards")
+            st.write(f"The raw response was: {cards}")
 
-    just_hand = cards_by_initials.copy()
-    just_hand.pop(cards_by_descs[choice], None) 
-    score_req_msg = {"starter": cards_by_descs[choice],
-                     "hand": list(just_hand.keys()),
-                     "isCrib": False}
+        just_hand = cards_by_initials.copy()
+        just_hand.pop(cards_by_descs[choice], None)
+        score_req_msg = {"starter": cards_by_descs[choice],
+                         "hand": list(just_hand.keys()),
+                         "isCrib": False}
 
-    response = requests.post(scorer_url,
-                             json=score_req_msg, headers=headers)
+        response = requests.post(scorer_url,
+                                 json=score_req_msg, headers=headers)
 
-    if "message" in response.json():
-        st.write(f"The score was {response.json()['score']}")
-        st.write(response.json()['message'])
+        if "message" in response.json():
+            st.write(f"The score was {response.json()['score']} points.")
+            scoring_items = response.json()['message'].split('|')
+            for item in scoring_items:
+                st.write(item)
 
 
 # Attempt to capture an image directly from the user's camera.
 img_file_buffer = st.camera_input("Take a picture of your cards:")
 
 if img_file_buffer is not None:
+    manage_session_state(img_file_buffer)
     an_img = Image.open(img_file_buffer)
     handle_a_pic(an_img)
 
@@ -144,5 +162,6 @@ else:
     uploaded_file = st.file_uploader("Or upload an image",
                                      type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
+        manage_session_state(img_file_buffer)
         an_img = Image.open(uploaded_file)
         handle_a_pic(an_img)

@@ -1,18 +1,7 @@
-# Python Project Template for your projects
+# Visual identification and scoring of Cribbage hands
 
-Use as a template for python repos, just basics to support python development and testing.
+## Running the APP
 
-
-## Run the tests
 ```bash
-python -m pytest
+streamlit run app.py
 ```
-## Debugger
-
-The `launch.json` file includes the necessary config to support using the vscode python debugger with pytest.
-
-
-# Docker Container
-
-Here is the [Dockerfile](https://github.com/phoughton/python_dev_container) for this template repo.
-(Its in a seperate Repo)
