@@ -41,29 +41,19 @@ st.markdown("""
 
         /* Center the camera input */
         .stCameraInput div {
-            display: flex;
             justify-content: center;
-        }
-
-        /* Ensure camera input fits the screen */
-        .stCameraInput > div > div {
-            width: 100%;
-            max-height: 500px; 
-            width: auto;
+            max-height: 400px;
         }
         
         .stCameraInput button {
             padding: 16px 32px; /* Increase button padding */
             font-size: 18px; /* Larger font size for button text */
-            background-color: #007BFF; /* Make the button more prominent (blue color) */
             color: white; /* White text for better contrast */
             border: none; /* Remove border */
             font-size: 20px; /* Larger text */
             border-radius: 8px; /* Add rounded corners */
             cursor: pointer; /* Show pointer cursor on hover */
-            transition: all 0.3s ease; /* Smooth hover effect */
-            width: 100%;
-            
+            transition: all 0.3s ease; /* Smooth hover effect */            
         }
         
         /* Adjust padding for a cleaner look */
