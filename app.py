@@ -26,7 +26,23 @@ class HandOfCards(BaseModel):
     cards: RootModel[list[Card]]
 
 
-st.title("Cribbage Scorer v2")
+st.set_page_config(
+    page_title="Cribbage Scorer v2",
+    layout="wide", 
+    initial_sidebar_state="collapsed" 
+)
+st.markdown("""
+<style>
+    body {
+        font-size: 18px;
+    }
+    .css-1d391kg {
+        padding-top: 0rem; /* Remove extra padding */
+    }
+</style>
+""", unsafe_allow_html=True)
+
+col1, col2 = st.columns([4, 1])  # Adjust the width ratio (3:1 here)
 
 
 def reset_session_state():
@@ -106,7 +122,7 @@ def handle_a_pic(img):
 
     resized_img = img.resize((new_width, new_height))
     width, height = resized_img.size
-    st.image(resized_img, caption="Here's the image you took.")
+    # st.image(resized_img, caption="Here's the image you took.")
 
     buffer = io.BytesIO()
     resized_img.save(buffer, format="JPEG")
@@ -118,40 +134,42 @@ def handle_a_pic(img):
         st.session_state["cards"] = detect_cards(b64encoded_img)
 
     cards = st.session_state["cards"]
+    with col2:
 
-    if len(cards["cards"]) != 5:
-        st.write("I can't score the hand as the "
-                 "correct number of cards (ie.: 5) is not present.")
-    else:
-        if "cards" in cards:
-            card_choices = cards["cards"]
-            cards_by_descs, cards_by_initials = dicts_from_cards(card_choices)
-            choice = st.radio("Please choose your starter card "
-                              "(We guessed it was the first one):\n",
-                              cards_by_descs.keys())
-            st.write("You selected:", choice)
+        if len(cards["cards"]) != 5:
+            st.write("I can't score the hand as the "
+                    "correct number of cards (ie.: 5) is not present.")
         else:
-            st.write("Sorry could not see any cards")
-            st.write(f"The raw response was: {cards}")
+            if "cards" in cards:
+                card_choices = cards["cards"]
+                cards_by_descs, cards_by_initials = dicts_from_cards(card_choices)
+                choice = st.radio("Please choose your starter card "
+                                "(We guessed it was the first one):\n",
+                                cards_by_descs.keys())
+                st.write("You selected:", choice)
+            else:
+                st.write("Sorry could not see any cards")
+                st.write(f"The raw response was: {cards}")
 
-        just_hand = cards_by_initials.copy()
-        just_hand.pop(cards_by_descs[choice], None)
-        score_req_msg = {"starter": cards_by_descs[choice],
-                         "hand": list(just_hand.keys()),
-                         "isCrib": False}
+            just_hand = cards_by_initials.copy()
+            just_hand.pop(cards_by_descs[choice], None)
+            score_req_msg = {"starter": cards_by_descs[choice],
+                            "hand": list(just_hand.keys()),
+                            "isCrib": False}
 
-        response = requests.post(scorer_url,
-                                 json=score_req_msg, headers=headers)
+            response = requests.post(scorer_url,
+                                    json=score_req_msg, headers=headers)
 
-        if "message" in response.json():
-            st.write(f"The score was {response.json()['score']} points.")
-            scoring_items = response.json()['message'].split('|')
-            for item in scoring_items:
-                st.write(item)
+            if "message" in response.json():
+                st.write(f"The score was {response.json()['score']} points.")
+                scoring_items = response.json()['message'].split('|')
+                for item in scoring_items:
+                    st.write(item)
 
 
 # Attempt to capture an image directly from the user's camera.
-img_file_buffer = st.camera_input("Take a picture of your cards:")
+with col1:
+    img_file_buffer = st.camera_input("Take a picture of your cards:")
 
 if img_file_buffer is not None:
     manage_session_state(img_file_buffer)
