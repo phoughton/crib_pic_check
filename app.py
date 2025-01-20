@@ -28,17 +28,47 @@ class HandOfCards(BaseModel):
 
 st.set_page_config(
     page_title="Cribbage Scorer v2",
-    layout="wide", 
-    initial_sidebar_state="collapsed" 
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 st.markdown("""
 <style>
-    body {
-        font-size: 18px;
-    }
-    .css-1d391kg {
-        padding-top: 0rem; /* Remove extra padding */
-    }
+        /* Hide the header */
+        header {visibility: hidden;}
+
+        /* Hide the footer */
+        footer {visibility: hidden;}
+
+        /* Center the camera input */
+        .stCameraInput div {
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Ensure camera input fits the screen */
+        .stCameraInput > div > div {
+            width: 100%;
+            max-height: 500px; 
+            width: auto;
+        }
+        
+        .stCameraInput button {
+            padding: 16px 32px; /* Increase button padding */
+            font-size: 18px; /* Larger font size for button text */
+            background-color: #007BFF; /* Make the button more prominent (blue color) */
+            color: white; /* White text for better contrast */
+            border: none; /* Remove border */
+            font-size: 20px; /* Larger text */
+            border-radius: 8px; /* Add rounded corners */
+            cursor: pointer; /* Show pointer cursor on hover */
+            transition: all 0.3s ease; /* Smooth hover effect */
+            width: 100%;
+            
+        }
+        
+        /* Adjust padding for a cleaner look */
+        .css-1d391kg {padding-top: 0rem;}
+        .css-1cpxqw2 {padding-bottom: 0rem;}
 </style>
 """, unsafe_allow_html=True)
 
